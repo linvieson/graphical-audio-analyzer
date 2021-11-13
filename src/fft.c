@@ -1,7 +1,10 @@
+// Based on the source: https://www.fit.vut.cz/research/product/510/
+
 #include "fft.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 static int ctz(size_t N)
 {
