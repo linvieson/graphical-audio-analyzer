@@ -3,9 +3,12 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <limits.h>
+#include <math.h>
+#include <complex.h>
+
 
 int read_data();
+int write_abs_data(float complex* vector, size_t length);
+
 
 #endif

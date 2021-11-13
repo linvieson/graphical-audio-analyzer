@@ -7,7 +7,7 @@ SRC_D = ./src
 DATA_D = ./data
 
 SOURCE_1 = fft
-SOURCE_2 = read_data
+SOURCE_2 = operate_data
 PRG = example
 
 
