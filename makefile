@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS =
+CFLAGS = -lm
 
 OBJ_D = ./obj
 BIN_D = ./bin
@@ -17,7 +17,7 @@ makedirs:
 	mkdir -p $(OBJ_D) $(BIN_D)
 
 $(BIN_D)/$(PRG): $(OBJ_D)/$(SOURCE_1).o $(OBJ_D)/$(SOURCE_2).o $(OBJ_D)/$(PRG).o
-	$(CC) $^ -o $@ -lm
+	$(CC) $^ -o $@ $(CFLAGS)
 
 $(OBJ_D)/$(SOURCE_1).o: $(SRC_D)/$(SOURCE_1).c
 	$(CC) -c $^ -o $@

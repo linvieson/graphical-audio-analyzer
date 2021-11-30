@@ -1,100 +1,141 @@
-// Based on the source: https://www.fit.vut.cz/research/product/510/
-
 #include "fft.h"
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
 
 
-static int ctz(size_t N)
+void pre_fft(float* real_values)
 {
-	int ctz1 = 0;
+    for (uint16_t ind = 0; ind < (SAMPLES >> 1); ++ind) {
+        float ratio = (float) ind / (SAMPLES - 1);
+        float weighing_factor = 0.54 - (0.46 * cos( TWO_PI * ratio));
 
-	while( N ) {
-		ctz1++;
-		N >>= 1;
-	}
-
-	return ctz1-1;
+        real_values[ind] *= weighing_factor;
+        real_values[SAMPLES - ind - 1] *= weighing_factor;
+    }
 }
 
-static void nop_split(const float complex *x, float complex *X, size_t N)
+uint16_t power_of_two(uint16_t number)
 {
-	for(size_t n = 0; n < N/2; n++) {
-		X[2*n+0] = x[0/2+n];
-		X[2*n+1] = x[N/2+n];
-	}
+    return (uint16_t) floor(log(number) / log(2));
 }
 
-static void fft_split(const float complex *x, float complex *X, size_t N, float complex phi)
+void swap(float* val_1, float* val_2)
 {
-	for(size_t n = 0; n < N/2; n++) {
-		X[2*n+0] = (x[0/2+n] + x[N/2+n]);
-		X[2*n+1] = (x[0/2+n] - x[N/2+n]) * cexp(-2*(float)M_PI*I*phi);
-	}
+    float temp = *val_1;
+    *val_1 = *val_2;
+    *val_2 = temp;
 }
 
-static size_t revbits(size_t v, int J)
+void compute_fft(float* real_values, float* imag_values)
 {
-	size_t r = 0;
+    uint16_t j = 0;
+    for (uint16_t i = 0; i < (SAMPLES - 1); ++i)
+    {
+        if (i < j)
+        {
+            swap(&real_values[i], &real_values[j]);
+        }
 
-	for(int j = 0; j < J; j++) {
-		r |= ( (v>>j)&1 ) << (J-1-j);
-	}
+        uint16_t half = SAMPLES >> 1;
+        while (half <= j) {
+            j -= half;
+            half >>= 1;
+        }
+        j += half;
+    }
 
-	return r;
+    float c1 = -1.0;
+    float c2 = 0.0;
+    uint16_t l2 = 1;
+    uint16_t power = power_of_two(SAMPLES);
+
+    for (uint8_t l = 0; l < power; l++)
+    {
+        uint16_t l1 = l2;
+        l2 <<= 1;
+        float u1 = 1.0;
+        float u2 = 0.0;
+
+        for (j = 0; j < l1; j++)
+        {
+            for (uint16_t i = j; i < SAMPLES; i += l2)
+            {
+                uint16_t i1 = i + l1;
+                float t1 = u1 * real_values[i1] - u2 * imag_values[i1];
+                float t2 = u1 * imag_values[i1] + u2 * real_values[i1];
+
+                real_values[i1] = real_values[i] - t1;
+                imag_values[i1] = imag_values[i] - t2;
+                real_values[i] += t1;
+                imag_values[i] += t2;
+            }
+            float z = ((u1 * c1) - (u2 * c2));
+            u2 = ((u1 * c2) + (u2 * c1));
+            u1 = z;
+        }
+        c2 = - pow((1.0 - c1) / 2.0, 0.5);
+        c1 = pow((1.0 + c1) / 2.0, 0.5);
+    }
 }
 
-static int nop_reverse(int b, float complex *buffers[2], size_t N)
+void compute_magnitude(float* real_values, float* imag_values)
 {
-	int J = ctz(N);
-
-	for(int j = J-2; j >= 0; j--, b++) {
-		size_t delta = N>>j;
-
-		for(size_t n = 0; n < N; n += delta) {
-			nop_split(buffers[b&1]+n, buffers[~b&1]+n, delta);
-		}
-	}
-
-	return b;
+    for (uint16_t ind = 0; ind < SAMPLES; ++ind)
+    {
+        real_values[ind] = pow((pow(real_values[ind], 2) + pow(imag_values[ind], 2)), 0.5);
+    }
 }
 
-static int fft_reverse(int b, float complex *buffers[2], size_t N)
+void find_peaks(float* magnitudes, float* peaks)
 {
-	int J = ctz(N);
+    magnitudes[0] = 0;
 
-	for(int j = J-1; j >= 0; j--, b++) {
-		size_t delta = N>>j;
-
-		for(size_t n = 0; n < N; n += delta) {
-			float complex phi = (float)revbits( n/delta, j) / (float)(2<<j);
-			fft_split(buffers[b&1]+n, buffers[~b&1]+n, delta, phi);
-		}
-	}
-
-	return b;
+    for (uint8_t peak_ind = 0; peak_ind < PEAKS_LENGTH; ++peak_ind)
+    {
+        float peak = 0;
+        for (uint16_t point_ind = peak_ind * STEP; point_ind < (peak_ind + 1) * STEP; ++point_ind)
+        {
+            if (magnitudes[point_ind] > peak)
+            {
+                peak = magnitudes[point_ind];
+            }
+        }
+        peaks[peak_ind] = peak;
+    }
 }
 
-int fft(float complex *vector, size_t N)
+void normalize_and_transform(float* peaks, uint8_t* transformed)
 {
-	if( !N ) return 0;
+    for (uint8_t ind = 0; ind < PEAKS_LENGTH; ++ind)
+    {
+        uint8_t power = power_of_two(peaks[ind]);
+        uint8_t new_ind = ceil(power / 2);
 
-	if( N & (N-1) ) return 1;
+        if (new_ind >= MATRIX_LENGTH)
+        {
+            new_ind = MATRIX_LENGTH - 1;
+        }
 
-	float complex *buffers[2] = { vector, malloc(N*sizeof(float complex)) };
-
-	if( !buffers[1] ) return -1;
-
-	int b = 0;
-
-	b = nop_reverse(b, buffers, N);
-	b = fft_reverse(b, buffers, N);
-	b = nop_reverse(b, buffers, N);
-
-	memmove(vector, buffers[b&1], N*sizeof(float complex));
-
-	free( buffers[1] );
-
-	return 0;
+        transformed[new_ind] += 1;
+    }
 }
+
+void get_result(float* real_values, float* imag_values, uint8_t* results)
+{
+    pre_fft(real_values);
+    compute_fft(real_values, imag_values);
+    compute_magnitude(real_values, imag_values);
+
+    float peaks[PEAKS_LENGTH];
+    find_peaks(real_values, peaks);
+
+    normalize_and_transform(peaks, results);
+}
+
+// power    index
+// 0        : 0
+// 1-2      : 1
+// 3-4      : 2
+// 5-6      : 3
+// 7-8      : 4
+// 9-10     : 5
+// 11-12    : 6
+// 13+      : 7

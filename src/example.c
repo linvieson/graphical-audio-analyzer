@@ -1,45 +1,29 @@
-#include <stddef.h>
-#include <complex.h>
-#include <math.h>
 #include <stdio.h>
-#include "fft.h"
+#include <stdint.h>
 #include "operate_data.h"
+#include "fft.h"
 
-#define NUM_ROWS 2000                   // only 1024 will be used
+#define SAMPLES         1024
+#define SAMPLING_FREQ   40000
+#define MATRIX_LENGTH   8
 
 
 int main() {
-    double time[NUM_ROWS] = {};
-    double values[NUM_ROWS] = {};
-    read_data(time, values, NUM_ROWS);
-    
-    size_t length = pow(2, floor(log(NUM_ROWS)/log(2)));
-    float complex vector[length];
+    float time[SAMPLES] = {};
+    float real_values[SAMPLES] = {};
+    read_data(time, real_values, SAMPLES);
 
-    for (size_t index = 0; index < length; ++index) {
-        vector[index] = values[index];
+
+    float imag_values[SAMPLES] = {};
+    uint8_t results[MATRIX_LENGTH] = {};
+
+    get_result(real_values, imag_values, results);
+
+    for (int i = 0; i < MATRIX_LENGTH; ++i)
+    {
+        printf("%d ", results[i]);
     }
-
-    printf("\nin time domain:\n");
-    for (size_t index = 0; index < length; ++index) {
-        printf("%f + %f i\n", creal(vector[index]), cimag(vector[index]));
-    }
-
-    fft(vector, length);
-
-    printf("\nin frequency domain:\n");
-    for (size_t index = 0; index < length; ++index) {
-        printf("%f + %f i\n", creal(vector[index]), cimag(vector[index]));
-    }
-
-    printf("\nAbs and theta:\n");
-    for (size_t index = 0; index < length; ++index) {
-        printf("%f  %f\n", cabs(vector[index]), carg(vector[index]));
-    }
-
-    printf("\nSaving abs values...\n");
-    write_abs_data(vector, length);
-    printf("Saved!\n");
 
     return 0;
 }
+

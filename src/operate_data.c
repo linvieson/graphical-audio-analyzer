@@ -1,32 +1,44 @@
 #include "operate_data.h"
 
 
-void save_to_arrays(FILE* file, double *time, double *values, size_t length) {
-    char buffer[length];                                                           // buffer for reading a line
+void __save_to_arrays(FILE* file, float *time, float *values, const uint16_t length)
+{
+    char buffer[length];
     size_t num = 0;
 
-    while (num < length && fgets (buffer, length, file)) {
-        if (sscanf(buffer, "%lf %lf", &time[num], &values[num]) == 2) {     // if line contains 2 doubles
+    while (num < length && fgets (buffer, length, file))
+    {
+        if (sscanf(buffer, "%f %f", &time[num], &values[num]) == 2)
+        {
             ++num;
         }
     }
 }
 
-int read_data (double* time, double* values, size_t length) {
+int read_data (float* time, float* values, const uint16_t length)
+{
     FILE* file = fopen("./data/data1.txt", "r");
-    if (!file) {
+    if (!file)
+    {
         return 1;
     }
-    save_to_arrays(file, time, values, length);
+    __save_to_arrays(file, time, values, length);
 
     fclose(file);
     return 0;
 }
 
-int write_abs_data(float complex* vector, size_t length) {
-    FILE *file = fopen("./data/results1.txt", "wb");
-    for (size_t index = 0; index < length; ++index) {
-        fprintf(file, "%f\n", fabsf(vector[index]));
+int write_data(float* values, const uint16_t length)
+{
+    FILE *file = fopen("./data/magnitudes1.txt", "wb");
+    if (!file)
+    {
+        return 1;
+    }
+
+    for (size_t index = 0; index < length; ++index)
+    {
+        fprintf(file, "%f\n", fabsf(values[index]));
     }
     fclose(file);
     return 0;
