@@ -11,13 +11,13 @@
 int main() {
     float time[SAMPLES] = {};
     float real_values[SAMPLES] = {};
-    read_data(time, real_values, SAMPLES);
+    read_data(time, real_values, SAMPLES);              // Save values of points to the array of real values
 
 
-    float imag_values[SAMPLES] = {};
-    uint8_t results[MATRIX_LENGTH] = {};
+    float imag_values[SAMPLES] = {};                    // Initialize array for imaginary numbers
+    uint8_t results[MATRIX_LENGTH] = {};                // Initialize array for future results
 
-    get_result(real_values, imag_values, results);
+    get_result(real_values, imag_values, results);      // Save results to the array
 
     for (int i = 0; i < MATRIX_LENGTH; ++i)
     {

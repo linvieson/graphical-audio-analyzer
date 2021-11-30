@@ -14,15 +14,15 @@
 #define STEP            (uint8_t) (ceil((float) SAMPLING_FREQ / SAMPLES))
 #define PEAKS_LENGTH    (uint8_t) (ceil((float) SAMPLES / STEP))
 
-uint16_t power_of_two(uint16_t number);
+uint16_t __power_of_two(uint16_t number);
 
-void pre_fft(float* points_array);
-void compute_fft(float* real_values, float* imag_values);
+void __pre_fft(float* points_array);
+void __compute_fft(float* real_values, float* imag_values);
 
-void compute_magnitude(float* real_values, float* imag_values);
-void find_peaks(float* magnitudes, float* peaks);
+void __compute_magnitude(float* real_values, float* imag_values);
+void __find_peaks(float* magnitudes, float* peaks);
 
-void normalize_and_transform(float* peaks, uint8_t* transformed);
+void __normalize_and_transform(float* peaks, uint8_t* transformed);
 
 void get_result(float* real_values, float* imag_values, uint8_t* results);
 

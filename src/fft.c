@@ -1,37 +1,43 @@
 #include "fft.h"
 
 
-void pre_fft(float* real_values)
+void __pre_fft(float* real_values)
+// Scale (window) the initial values of the points to reduce the spectral leakage.
+// Use Hamming Window with scaling factor (coherent gain) = 0.54
 {
+    // Values are symmetric, thus iterate only on the first half of the array
     for (uint16_t ind = 0; ind < (SAMPLES >> 1); ++ind) {
         float ratio = (float) ind / (SAMPLES - 1);
         float weighing_factor = 0.54 - (0.46 * cos( TWO_PI * ratio));
 
         real_values[ind] *= weighing_factor;
-        real_values[SAMPLES - ind - 1] *= weighing_factor;
+        real_values[SAMPLES - ind - 1] *= weighing_factor;      // symmetrical to the real_values[ind]
     }
 }
 
-uint16_t power_of_two(uint16_t number)
+uint16_t __power_of_two(uint16_t number)
+// Get the power of 2, which is a bottom bound of the given number.
 {
     return (uint16_t) floor(log(number) / log(2));
 }
 
-void swap(float* val_1, float* val_2)
+void __swap(float* val_1, float* val_2)
+// Swap two points values given their addresses.
 {
     float temp = *val_1;
     *val_1 = *val_2;
     *val_2 = temp;
 }
 
-void compute_fft(float* real_values, float* imag_values)
+void __compute_fft(float* real_values, float* imag_values)
+// Compute the in-place Fast Furrier transform.
 {
     uint16_t j = 0;
     for (uint16_t i = 0; i < (SAMPLES - 1); ++i)
     {
         if (i < j)
         {
-            swap(&real_values[i], &real_values[j]);
+            __swap(&real_values[i], &real_values[j]);
         }
 
         uint16_t half = SAMPLES >> 1;
@@ -45,7 +51,7 @@ void compute_fft(float* real_values, float* imag_values)
     float c1 = -1.0;
     float c2 = 0.0;
     uint16_t l2 = 1;
-    uint16_t power = power_of_two(SAMPLES);
+    uint16_t power = __power_of_two(SAMPLES);
 
     for (uint8_t l = 0; l < power; l++)
     {
@@ -76,16 +82,24 @@ void compute_fft(float* real_values, float* imag_values)
     }
 }
 
-void compute_magnitude(float* real_values, float* imag_values)
+void __compute_magnitude(float* real_values, float* imag_values)
+// Compute in-place the absolute values of the received numbers from the FFT.
+// They are stored in the array real_values.
 {
     for (uint16_t ind = 0; ind < SAMPLES; ++ind)
     {
+        // |z| = sqrt(a^2 + b^2)
         real_values[ind] = pow((pow(real_values[ind], 2) + pow(imag_values[ind], 2)), 0.5);
     }
 }
 
-void find_peaks(float* magnitudes, float* peaks)
+void __find_peaks(float* magnitudes, float* peaks)
+// Find the maximum value in each magnitude array slice with a STEP numbers.
+// STEP = SAMPLING_FREQ / SAMPLES.
+// Save the peaks into array peaks with length PEAKS_LENGTH.
+// PEAKS_LENGTH = SAMPLES / STEP.
 {
+    // Ignore the first number in fft.
     magnitudes[0] = 0;
 
     for (uint8_t peak_ind = 0; peak_ind < PEAKS_LENGTH; ++peak_ind)
@@ -102,12 +116,28 @@ void find_peaks(float* magnitudes, float* peaks)
     }
 }
 
-void normalize_and_transform(float* peaks, uint8_t* transformed)
+void __normalize_and_transform(float* peaks, uint8_t* transformed)
+// Reduce the peak`s magnitude to the relative numbers, count the number of their occurrences and
+// save them to the array transformed.
+
+// Represent each peak`s magnitude as power of 2, which bounds it in the bottom.
+// Then save the number of their occurrences in the peaks array according to the following representation:
+
+// power    index
+// 0        : 0
+// 1-2      : 1
+// 3-4      : 2
+// 5-6      : 3
+// 7-8      : 4
+// 9-10     : 5
+// 11-12    : 6
+// 13+      : 7
+
 {
     for (uint8_t ind = 0; ind < PEAKS_LENGTH; ++ind)
     {
-        uint8_t power = power_of_two(peaks[ind]);
-        uint8_t new_ind = ceil(power / 2);
+        uint8_t power = __power_of_two(peaks[ind]);
+        uint8_t new_ind = ceil(power >> 1);
 
         if (new_ind >= MATRIX_LENGTH)
         {
@@ -119,23 +149,14 @@ void normalize_and_transform(float* peaks, uint8_t* transformed)
 }
 
 void get_result(float* real_values, float* imag_values, uint8_t* results)
+// Driver function to get the array of relative magnitudes.
 {
-    pre_fft(real_values);
-    compute_fft(real_values, imag_values);
-    compute_magnitude(real_values, imag_values);
+    __pre_fft(real_values);
+    __compute_fft(real_values, imag_values);
+    __compute_magnitude(real_values, imag_values);
 
     float peaks[PEAKS_LENGTH];
-    find_peaks(real_values, peaks);
+    __find_peaks(real_values, peaks);
 
-    normalize_and_transform(peaks, results);
+    __normalize_and_transform(peaks, results);
 }
-
-// power    index
-// 0        : 0
-// 1-2      : 1
-// 3-4      : 2
-// 5-6      : 3
-// 7-8      : 4
-// 9-10     : 5
-// 11-12    : 6
-// 13+      : 7
