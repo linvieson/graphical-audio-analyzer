@@ -15,13 +15,43 @@ int main() {
 
 
     float imag_values[SAMPLES] = {};                    // Initialize array for imaginary numbers
-    uint8_t results[MATRIX_LENGTH] = {};                // Initialize array for future results
 
-    get_result(real_values, imag_values, results);      // Save results to the array
+    float peaks[MATRIX_LENGTH] = {};
+    float means[MATRIX_LENGTH] = {};
+    get_result(real_values, imag_values, peaks, means);      // Save results to the array
+
+    printf("\nPeaks\n");
+    for (int i = 0; i < MATRIX_LENGTH; ++i)
+    {
+        printf("%f ", peaks[i]);
+    }
+
+    printf("\nMeans\n");
 
     for (int i = 0; i < MATRIX_LENGTH; ++i)
     {
-        printf("%d ", results[i]);
+        printf("%f ", means[i]);
+    }
+
+
+    uint8_t res_peaks[MATRIX_LENGTH];
+    transform_for_diods(peaks, res_peaks);
+
+    uint8_t res_means[MATRIX_LENGTH];
+    transform_for_diods(means, res_means);
+
+    printf("\nPeaks\n");
+
+    for (int i = 0; i < MATRIX_LENGTH; ++i)
+    {
+        printf("%d ", res_peaks[i]);
+    }
+
+    printf("\nMeans\n");
+
+    for (int i = 0; i < MATRIX_LENGTH; ++i)
+    {
+        printf("%d ", res_means[i]);
     }
 
     return 0;

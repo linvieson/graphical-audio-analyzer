@@ -1,4 +1,5 @@
 #include "fft.h"
+#include <stdio.h>
 
 
 void __pre_fft(float* real_values)
@@ -93,70 +94,92 @@ void __compute_magnitude(float* real_values, float* imag_values)
     }
 }
 
-void __find_peaks(float* magnitudes, float* peaks)
-// Find the maximum value in each magnitude array slice with a STEP numbers.
+void __interpret_magnitudes(float* magnitudes, float* peaks, float* means)
 // STEP = SAMPLING_FREQ / SAMPLES.
-// Save the peaks into array peaks with length PEAKS_LENGTH.
-// PEAKS_LENGTH = SAMPLES / STEP.
-{
-    // Ignore the first number in fft.
-    magnitudes[0] = 0;
+// Divide the fist half of the array of magnitudes on the MATRIX_LENGTH parts,
+// with each next slice being larger than the previous one.
+// For each slice calculate the peak and the average value, and store them into
+// arrays peaks and means respectively.
 
-    for (uint8_t peak_ind = 0; peak_ind < PEAKS_LENGTH; ++peak_ind)
-    {
-        float peak = 0;
-        for (uint16_t point_ind = peak_ind * STEP; point_ind < (peak_ind + 1) * STEP; ++point_ind)
-        {
-            if (magnitudes[point_ind] > peak)
-            {
-                peak = magnitudes[point_ind];
-            }
-        }
-        peaks[peak_ind] = peak;
+// The slice boundaries are the number 2 raised to a power, starting from 1 (2 ^ 1 = 2), and ending with
+// MATRIX_LENGTH (2 ^ 8 = 512). Thus, the slices boundaries are: (2, 4); (4, 8); (8, 16); ...; (256, 512).
+{
+
+    uint16_t upper_bound = 2;
+    uint16_t lower_bound;
+
+    for (uint16_t ind = 0; ind < MATRIX_LENGTH; ++ind) {
+        lower_bound = upper_bound;
+        upper_bound <<= 1;
+
+        peaks[ind] = __calc_slice_peak(magnitudes, lower_bound, upper_bound);
+        means[ind] = __calc_slice_mean(magnitudes, lower_bound, upper_bound);
     }
 }
 
-void __normalize_and_transform(float* peaks, uint8_t* transformed)
-// Reduce the peak`s magnitude to the relative numbers, count the number of their occurrences and
-// save them to the array transformed.
-
-// Represent each peak`s magnitude as power of 2, which bounds it in the bottom.
-// Then save the number of their occurrences in the peaks array according to the following representation:
-
-// power    index
-// 0        : 0
-// 1-2      : 1
-// 3-4      : 2
-// 5-6      : 3
-// 7-8      : 4
-// 9-10     : 5
-// 11-12    : 6
-// 13+      : 7
-
+float __calc_slice_peak(float* magnitudes, const uint16_t start, const uint16_t end)
+// Find the max value of the array slice with the given indices.
 {
-    for (uint8_t ind = 0; ind < PEAKS_LENGTH; ++ind)
+    float max_val = 0;
+    for (uint16_t ind = start; ind < end; ++ind)
     {
-        uint8_t power = __power_of_two(peaks[ind]);
-        uint8_t new_ind = ceil(power >> 1);
-
-        if (new_ind >= MATRIX_LENGTH)
+        if (magnitudes[ind] > max_val)
         {
-            new_ind = MATRIX_LENGTH - 1;
+            max_val = magnitudes[ind];
         }
-
-        transformed[new_ind] += 1;
     }
+    return max_val;
 }
 
-void get_result(float* real_values, float* imag_values, uint8_t* results)
-// Driver function to get the array of relative magnitudes.
+float __calc_slice_mean(float* magnitudes, const uint16_t start, const uint16_t end)
+// Find the average of the array slice with the given indices.
+{
+    float mean = 0;
+    for (uint16_t ind = start; ind < end; ++ind)
+    {
+        mean += magnitudes[ind];
+    }
+    return mean / (end - start);
+}
+
+float __calc_min(float* array)
+// Find the min value of the array.
+{
+    float min_val = array[0];
+    for (uint16_t ind = 1; ind < MATRIX_LENGTH; ++ind)
+    {
+        if (array[ind] < min_val)
+        {
+            min_val = array[ind];
+        }
+    }
+    return min_val;
+}
+
+void get_result(float* real_values, float* imag_values, float* peaks, float* means)
+// Driver function to compute the peaks and the average values, which will be stored in the arrays peaks and means respectively.
 {
     __pre_fft(real_values);
     __compute_fft(real_values, imag_values);
     __compute_magnitude(real_values, imag_values);
 
-    float peaks[PEAKS_LENGTH];
-    __find_peaks(real_values, peaks);
+    __interpret_magnitudes(real_values, peaks, means);
+}
 
-    __normalize_and_transform(peaks, results);
+void transform_for_diods(float* values, uint8_t* result)
+{
+    float max = __calc_slice_peak(values, 0, MATRIX_LENGTH);
+    float min = __calc_min(values);
+    float step = (max - min) / (MATRIX_LENGTH - 1);
+
+    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
+    {
+        result[ind] = 0;
+    }
+
+    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
+    {
+        uint8_t value_ind = floor(values[ind] / step);
+        result[value_ind] += 1;
+    }
 }
