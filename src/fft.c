@@ -1,5 +1,4 @@
 #include "fft.h"
-#include <stdio.h>
 
 
 void __pre_fft(float* real_values)
