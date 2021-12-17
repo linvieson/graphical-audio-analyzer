@@ -93,7 +93,7 @@ void __compute_magnitude(float* real_values, float* imag_values)
     }
 }
 
-void __interpret_magnitudes(float* magnitudes, float* peaks, float* means)
+void __interpret_magnitudes(float* magnitudes, float* peaks)
 // STEP = SAMPLING_FREQ / SAMPLES.
 // Divide the fist half of the array of magnitudes on the MATRIX_LENGTH parts,
 // with each next slice being larger than the previous one.
@@ -112,7 +112,6 @@ void __interpret_magnitudes(float* magnitudes, float* peaks, float* means)
         upper_bound <<= 1;
 
         peaks[ind] = __calc_slice_peak(magnitudes, lower_bound, upper_bound);
-        means[ind] = __calc_slice_mean(magnitudes, lower_bound, upper_bound);
     }
 }
 
@@ -155,14 +154,14 @@ float __calc_min(float* array)
     return min_val;
 }
 
-void get_result(float* real_values, float* imag_values, float* peaks, float* means)
+void get_result(float* real_values, float* imag_values, float* peaks)
 // Driver function to compute the peaks and the average values, which will be stored in the arrays peaks and means respectively.
 {
     __pre_fft(real_values);
     __compute_fft(real_values, imag_values);
     __compute_magnitude(real_values, imag_values);
 
-    __interpret_magnitudes(real_values, peaks, means);
+    __interpret_magnitudes(real_values, peaks);
 }
 
 void transform_for_diods(float* values, uint8_t* result)

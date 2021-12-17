@@ -22,9 +22,9 @@ void __compute_fft(float* real_values, float* imag_values);
 void __compute_magnitude(float* real_values, float* imag_values);
 float __calc_slice_peak(float* magnitudes, const uint16_t start, const uint16_t end);
 float __calc_slice_mean(float* magnitudes, const uint16_t start, const uint16_t end);
-void __interpret_magnitudes(float* magnitudes, float* peaks, float* means);
+void __interpret_magnitudes(float* magnitudes, float* peaks);
 
-void get_result(float* real_values, float* imag_values, float* peaks, float* means);
+void get_result(float* real_values, float* imag_values, float* peaks);
 
 float __calc_min(float* array);
 void transform_for_diods(float* values, uint8_t* result);
