@@ -27,7 +27,7 @@ void __interpret_magnitudes(float* magnitudes, float* peaks);
 void get_result(float* real_values, float* imag_values, float* peaks);
 
 float __calc_min(float* array);
-void transform_for_diods(float* values, uint8_t* result);
+void transform_for_diods(float* values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH]);
 
 
 #endif

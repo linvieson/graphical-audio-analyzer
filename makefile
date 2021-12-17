@@ -8,6 +8,7 @@ DATA_D = ./data
 
 SOURCE_1 = fft
 SOURCE_2 = operate_data
+#SOURCE_3 = leds_matrix
 PRG = example
 
 
@@ -24,6 +25,9 @@ $(OBJ_D)/$(SOURCE_1).o: $(SRC_D)/$(SOURCE_1).c
 
 $(OBJ_D)/$(SOURCE_2).o: $(SRC_D)/$(SOURCE_2).c
 	$(CC) -c $^ -o $@
+
+#$(OBJ_D)/$(SOURCE_3).o: $(SRC_D)/$(SOURCE_3).c
+#	$(CC) -c $^ -o $@
 
 $(OBJ_D)/$(PRG).o: $(SRC_D)/$(PRG).c
 	$(CC) -c $^ -o $@

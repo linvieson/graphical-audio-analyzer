@@ -164,19 +164,23 @@ void get_result(float* real_values, float* imag_values, float* peaks)
     __interpret_magnitudes(real_values, peaks);
 }
 
-void transform_for_diods(float* values, uint8_t* result)
+void transform_for_diods(float* values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH])
 {
     float max = __calc_slice_peak(values, 0, MATRIX_LENGTH);
     float min = __calc_min(values);
     float step = (max - min) / (MATRIX_LENGTH - 1);
 
-    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
+    for (uint8_t col = 0; col < MATRIX_LENGTH; ++col)
     {
-        result[ind] = 0;
-    }
+        uint8_t scaled = floor(values[col] / step);
+//        if (scaled == 0)
+//        {
+//            continue;
+//        }
 
-    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
-    {
-        result[ind] = floor(values[ind] / step);
+        for (uint8_t row = 0; row <= scaled; ++row)
+        {
+            matrix[MATRIX_LENGTH - row - 1][col] = 1;
+        }
     }
 }

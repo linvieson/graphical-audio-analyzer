@@ -6,3 +6,33 @@
 85640.406250
 62.627781
 58017.054688
+
+Peaks
+5 0 0 0 0 7 0 4
+
+void transform_for_diods(float* values, uint8_t matrix[][MATRIX_LENGTH])
+{
+//    uint8_t result[MATRIX_LENGTH];
+    float max = __calc_slice_peak(values, 0, MATRIX_LENGTH);
+    float min = __calc_min(values, MATRIX_LENGTH);
+    float step = (max - min) / (MATRIX_LENGTH - 1);
+
+    for (uint8_t col = 0; col < MATRIX_LENGTH; ++col)
+    {
+        uint8_t scaled = floor(values[col] / step);
+//        if (scaled == 0)
+//        {
+//            continue;
+//        }
+
+        for (uint8_t row = 0; row <= scaled; ++row)
+        {
+            matrix[MATRIX_LENGTH - row - 1][col] = 1;
+        }
+    }
+}
+
+
+{ {}, {}, {}, {}, {}, {}, {}, {},
+
+}
