@@ -178,7 +178,6 @@ void transform_for_diods(float* values, uint8_t* result)
 
     for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
     {
-        uint8_t value_ind = floor(values[ind] / step);
-        result[value_ind] += 1;
+        result[ind] = floor(values[ind] / step);
     }
 }
