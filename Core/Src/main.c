@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "fft.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -130,14 +130,14 @@ void WS_Reset(void){
 	WS2812_Send();
 }
 
-void WS_Set(int matrix[]){
+void WS_Set(uint8_t matrix[64]){
     for (int i=0; i < 64; i++){
-      if (matrix[i]==1){
-        Set_LED(i, 67, 4, 4);
-      }
-      else {
-        Set_LED(i, 0, 0, 0);
-      }
+		  if (matrix[i] == 1){
+			Set_LED(i, 67, 4, 4);
+		  }
+		  else {
+			Set_LED(i, 0, 0, 0);
+		  }
     }
     WS2812_Send();
 }
@@ -194,31 +194,52 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-//  WS_Set(lst);
+  uint8_t lst[64] = {};
+  uint8_t m[8][8] = {};
   WS_Reset();
 
-
-  int lst[MAX_LED];
+  uint8_t counter = 0;
+//  int lst[MAX_LED];
   while (1)
   {
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-    uint32_t ADCBuffer[1024];
+    uint32_t ADCBuffer[1024] = {};
+    float buf[1024] = {};
+    uint32_t ab[1024] = {};
 
 //    HAL_ADC_Start(&hadc1);
-    HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCBuffer, (1024 * 2));
-
+//    HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCBuffer, (1024 * 2));
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &buf, (1024 * 2));
 
     for (uint16_t i = 0; i < 1024; ++i) {
+
         HAL_ADC_PollForConversion(&hadc1, 100);
         adc = HAL_ADC_GetValue(&hadc1);
-        ADCBuffer[i] = adc;
+//        buf[i] = (float) adc * 3.3 / 4095.0;
+        buf[i] = (float) adc;
+
+//        buf[i] = (float) adc;
+//        ab[i] = adc * 3300 / 4095;
+
+//        if (buf[i] != 0) {
+//        	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
+//        } else {
+//    		  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+//        }
+//        ADCBuffer[i] = adc;
     }
 
-//    HAL_ADC_Stop(&hadc1);
+    //    HAL_ADC_Stop(&hadc1);
     HAL_ADC_Stop_DMA(&hadc1);
+
+
+    uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH] = {};
+
+    get_result(buf, matrix);
+//        get_result(ab, matrix);
 
 
 
@@ -229,7 +250,21 @@ int main(void)
     }
 //    lst[0] = 1;
 
-//	  WS_Set(lst);
+
+//    counter = (counter % 8);
+//    m[counter][counter] = !(m[counter][counter]);
+//    ++counter;
+
+    int ind = 0;
+    for (int row = 0; row < 8; row++) {
+    	for (int col = 0; col < 8; col++) {
+    		lst[ind++] = matrix[col][row];
+    	}
+    }
+
+//    lst[counter][counter] = !(lst[counter][counter]);
+//    lst[counter] = !(lst[counter]);
+	  WS_Set(lst);
 	  HAL_Delay(200);
   }
   /* USER CODE END 3 */
