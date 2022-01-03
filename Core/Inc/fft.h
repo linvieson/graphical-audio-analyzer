@@ -8,7 +8,7 @@
 #define TWO_PI 6.28318531
 
 #define SAMPLES         1024
-#define SAMPLING_FREQ   40000
+#define SAMPLING_FREQ   41666
 #define MATRIX_LENGTH   8
 
 #define STEP            (uint8_t) (ceil((float) SAMPLING_FREQ / SAMPLES))

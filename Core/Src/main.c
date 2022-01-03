@@ -34,6 +34,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define MAX_LED 64 // max LEDs that we have in a cascade
+
+#define ADC_REGULAR_RANK_1 ((uint32_t)0x00000001) /*!< ADC regular conversion rank 1 */
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -197,50 +199,54 @@ int main(void)
   uint8_t lst[64] = {};
   uint8_t m[8][8] = {};
   WS_Reset();
+  uint16_t buf[1024] = {0};
+  float values[1024] = {0};
 
-  uint8_t counter = 0;
-//  int lst[MAX_LED];
+  ADC_ChannelConfTypeDef sConfig = {0};
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+  Error_Handler();
+  }
+
   while (1)
   {
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-    uint32_t ADCBuffer[1024] = {};
-    float buf[1024] = {};
-    uint32_t ab[1024] = {};
 
 //    HAL_ADC_Start(&hadc1);
 //    HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCBuffer, (1024 * 2));
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &buf, (1024 * 2));
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &buf, (1024));
 
-    for (uint16_t i = 0; i < 1024; ++i) {
+    HAL_Delay(1);
 
-        HAL_ADC_PollForConversion(&hadc1, 100);
-        adc = HAL_ADC_GetValue(&hadc1);
-//        buf[i] = (float) adc * 3.3 / 4095.0;
-        buf[i] = (float) adc;
+	while(!flag_adc_dma) {};
+	flag_adc_dma = 0;
 
+//    for (uint16_t i = 0; i < 1024; ++i) {
+//
+//        HAL_ADC_PollForConversion(&hadc1, 100);
+//        adc = HAL_ADC_GetValue(&hadc1);
 //        buf[i] = (float) adc;
-//        ab[i] = adc * 3300 / 4095;
-
-//        if (buf[i] != 0) {
-//        	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-//        } else {
-//    		  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
-//        }
-//        ADCBuffer[i] = adc;
-    }
+//    }
 
     //    HAL_ADC_Stop(&hadc1);
     HAL_ADC_Stop_DMA(&hadc1);
 
+    for (uint16_t i = 0; i < 1024; ++i) {
+    	values[i] = (float) buf[i];
+    }
 
     uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH] = {};
+    get_result(values, matrix);
 
-    get_result(buf, matrix);
-//        get_result(ab, matrix);
-
+    for (uint16_t i = 0; i < 1024; ++i) {
+    	values[i] /= 1024;
+    }
 
 
     if (adc != 0) {
@@ -248,8 +254,6 @@ int main(void)
     } else {
 		  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
     }
-//    lst[0] = 1;
-
 
 //    counter = (counter % 8);
 //    m[counter][counter] = !(m[counter][counter]);
@@ -262,8 +266,6 @@ int main(void)
     	}
     }
 
-//    lst[counter][counter] = !(lst[counter][counter]);
-//    lst[counter] = !(lst[counter]);
 	  WS_Set(lst);
 	  HAL_Delay(200);
   }
@@ -305,7 +307,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV16;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
