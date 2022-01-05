@@ -197,19 +197,24 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   uint8_t lst[64] = {};
-  uint8_t m[8][8] = {};
   WS_Reset();
+
+  WS_Set(lst);
+  HAL_Delay(1000);
+
   uint16_t buf[1024] = {0};
   float values[1024] = {0};
 
   ADC_ChannelConfTypeDef sConfig = {0};
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
   Error_Handler();
   }
+
+
 
   while (1)
   {
@@ -248,12 +253,6 @@ int main(void)
     	values[i] /= 1024;
     }
 
-
-    if (adc != 0) {
-    	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-    } else {
-		  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
-    }
 
 //    counter = (counter % 8);
 //    m[counter][counter] = !(m[counter][counter]);
@@ -307,7 +306,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV16;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
