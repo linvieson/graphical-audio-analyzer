@@ -154,7 +154,7 @@ float __calc_min(float* array)
     return min_val;
 }
 
-void get_result(float* real_values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH])
+void perform_fft(float* real_values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH])
 // Driver function to compute the peaks and the average values, which will be stored in the arrays peaks and means respectively.
 {
     __pre_fft(real_values);

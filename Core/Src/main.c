@@ -34,9 +34,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MAX_LED 64 // max LEDs that we have in a cascade
-
-#define ADC_REGULAR_RANK_1 ((uint32_t)0x00000001) /*!< ADC regular conversion rank 1 */
+#define MAX_LED 			64 						// max LEDs that we have in a cascade
+#define SAMPLES_NUM         1024					// number of samples for adc
+#define ADC_REGULAR_RANK_1	((uint32_t)0x00000001)	// ADC regular conversion rank 1
 
 /* USER CODE END PD */
 
@@ -57,10 +57,19 @@ TIM_HandleTypeDef htim1;
 DMA_HandleTypeDef hdma_tim1_ch1;
 
 /* USER CODE BEGIN PV */
-uint8_t flag_adc_dma = 0;
-uint32_t adc = 0;
+
+uint8_t datasentflag = 0;  // to make sure that the dma does not send another data while the first data is still transmitted
+
+volatile uint8_t flag_adc_dma = 0;
+uint16_t adc_buffer[1024] = {0};
+float adc_float_buffer[1024] = {0};
 
 uint8_t colors[8][3] = {{255, 10, 10}, {255, 10, 65}, {115, 10, 255}, {10, 10, 255}, {10, 225, 255}, {10, 255, 55}, {185, 255, 10}, {255, 155, 10}};
+uint8_t LED_Data[MAX_LED][4];  // matrix of 4 columns, number of rows = number of LEDs we have
+uint16_t pwmData[24 * MAX_LED + 50]; // store 24 bits for each led + 50 values for reset code
+
+uint8_t leds[64] = {}; // to store which leds to lighten after performing fft
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,14 +89,12 @@ void MX_USB_HOST_Process(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint8_t LED_Data[MAX_LED][4];  // matrix of 4 columns, number of rows = number of LEDs we have
-int datasentflag=0;  // to make sure that the dma does not send another data while the first data is still transmitted
-
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)  // this callback is called when data transmission is finished
 {
 	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);  // stop dma, when the transmission is finished
 	datasentflag = 1;
 }
+
 
 void Set_LED (int LEDnum, int Red, int Green, int Blue)
 {
@@ -97,57 +104,70 @@ void Set_LED (int LEDnum, int Red, int Green, int Blue)
 	LED_Data[LEDnum][3] = Blue;
 }
 
-uint16_t pwmData[(24*MAX_LED)+50]; // store 24 bits for each led + 50 values for reset code
+
 void WS2812_Send (void)
 {
-	uint32_t indx=0;
+	uint32_t indx = 0;
 	uint32_t color;  //32 bit variable to store 24 bits of color
 
-	for (int i= 0; i<MAX_LED; i++)  // iterate through all of the LEDs
+	for (uint8_t i = 0; i < MAX_LED; i++)  // iterate through all of the LEDs
 	{
-		color = ((LED_Data[i][1]<<16) | (LED_Data[i][2]<<8) | (LED_Data[i][3])); // green red blue
+		color = ((LED_Data[i][1] << 16) | (LED_Data[i][2] << 8) | (LED_Data[i][3])); // green red blue
 
-		for (int i=23; i>=0; i--) // iterate through the 24 bits which specify the color
+		for (int j = 23; j >= 0; j--) // iterate through the 24 bits which specify the color
 		{
-			if (color&(1<<i))
+			if (color & (1 << j))
 			{
 				pwmData[indx] = 57; // if the bit is 1, the duty cycle is 64%
 			}
-			else pwmData[indx] = 28;  // if the bit is 0, the duty cycle is 32%
+			else
+			{
+				pwmData[indx] = 28;  // if the bit is 0, the duty cycle is 32%
+			}
 			indx++;
 		}
 	}
 
-	for (int i=0; i<50; i++)  // store values to keep the pulse low for 50+ us, reset code
+	for (uint8_t i = 0; i < 50; i++)  // store values to keep the pulse low for 50+ us, reset code
 	{
-		pwmData[indx] = 0;
-		indx++;
+		pwmData[indx++] = 0;
 	}
-	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t *)pwmData, indx);  // send the data to the dma
-	while (!datasentflag){};  // this flag will be set when the data transmission is finished, dma is stopped and now we can send another data
+
+	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t*) pwmData, indx);  // send the data to the dma
+
+	while (!datasentflag) {};  // this flag will be set when the data transmission is finished, dma is stopped and now we can send another data
 	datasentflag = 0;
 }
 
 
-void WS_Reset(void){
-	for (int i=0; i < 64; i++){
+void WS_Reset(void)
+{
+	for (uint8_t i = 0; i < MAX_LED; i++)
+	{
     Set_LED(i, 0, 0, 0);
-  }
+    }
+
 	WS2812_Send();
 }
 
-void WS_Set(uint8_t matrix[64]){
+
+void WS_Set(uint8_t matrix[MAX_LED])
+{
 	uint8_t color[3];
-    for (int i=0; i < 64; i++){
+
+    for (uint8_t i = 0; i < MAX_LED; i++)
+    {
         memcpy(color, colors[i / 8], 3);
-		  if (matrix[i] == 1){
-//			Set_LED(i, 67, 4, 4);
-			  Set_LED(i, color[0], color[1], color[2]);
-		  }
-		  else {
+		if (matrix[i] == 1)
+		{
+			Set_LED(i, color[0], color[1], color[2]);
+		}
+		else
+		{
 			Set_LED(i, 0, 0, 0);
-		  }
+		}
     }
+
     WS2812_Send();
 }
 /* USER CODE END 0 */
@@ -188,43 +208,22 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
-
-
-//  HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCBuffer, (1024 * 2));
-//
-//  if(flag_adc_dma == 1){
-//	  HAL_ADC_Stop_DMA(&hadc1);
-//	  flag_adc_dma = 0;
-//  }
-
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  uint8_t lst[64] = {};
-  WS_Reset();
-
-//  lst[0] = 1;
-//  lst[8] = 1;
-
-//  WS_Set(lst);
-//  HAL_Delay(10000);
-
-
-  uint16_t buf[1024] = {0};
-  float values[1024] = {0};
-
   ADC_ChannelConfTypeDef sConfig = {0};
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
+
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
   Error_Handler();
   }
 
+  WS_Reset();
 
   while (1)
   {
@@ -233,9 +232,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-//    HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCBuffer, (1024 * 2));
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &buf, (1024));
-
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES_NUM));
     HAL_Delay(1);
 
 	while(!flag_adc_dma) {};
@@ -243,26 +240,25 @@ int main(void)
 
     HAL_ADC_Stop_DMA(&hadc1);
 
-    for (uint16_t i = 0; i < 1024; ++i) {
-    	values[i] = (float) buf[i];
+
+    for (uint16_t i = 0; i < SAMPLES_NUM; i++)
+    {
+    	adc_float_buffer[i] = (float) adc_buffer[i];
     }
 
     uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH] = {};
-    get_result(values, matrix);
+    perform_fft(adc_float_buffer, matrix);
 
-    for (uint16_t i = 0; i < 1024; ++i) {
-    	values[i] /= 1024;
-    }
-
-
-    int ind = 0;
-    for (int row = 0; row < 8; row++) {
-    	for (int col = 0; col < 8; col++) {
-    		lst[ind++] = matrix[7 - col][row];
+    uint8_t ind = 0;
+    for (uint8_t row = 0; row < 8; row++)
+    {
+    	for (uint8_t col = 0; col < 8; col++)
+    	{
+    		leds[ind++] = matrix[7 - col][row];
     	}
     }
 
-	  WS_Set(lst);
+	  WS_Set(leds);
 	  HAL_Delay(200);
   }
   /* USER CODE END 3 */
