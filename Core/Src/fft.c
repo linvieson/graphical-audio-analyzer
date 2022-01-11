@@ -103,15 +103,15 @@ void __interpret_magnitudes(float* magnitudes, float* peaks)
 // The slice boundaries are the number 2 raised to a power, starting from 1 (2 ^ 1 = 2), and ending with
 // MATRIX_LENGTH (2 ^ 8 = 512). Thus, the slices boundaries are: (2, 4); (4, 8); (8, 16); ...; (256, 512).
 {
+    uint16_t slices[] = {8, 15, 25, 75, 125, 200, 300, 512};
 
-    uint16_t upper_bound = 2;
-    uint16_t lower_bound;
+    uint16_t upper_bound;
+    uint16_t lower_bound = 3;
 
-    for (uint16_t ind = 0; ind < MATRIX_LENGTH; ++ind) {
-        lower_bound = upper_bound;
-        upper_bound <<= 1;
-
+    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind) {
+        upper_bound = slices[ind];
         peaks[ind] = __calc_slice_peak(magnitudes, lower_bound, upper_bound);
+        lower_bound = upper_bound;
     }
 }
 

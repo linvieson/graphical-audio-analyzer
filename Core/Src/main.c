@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <string.h>
 #include "fft.h"
 /* USER CODE END Includes */
 
@@ -36,6 +37,7 @@
 #define MAX_LED 64 // max LEDs that we have in a cascade
 
 #define ADC_REGULAR_RANK_1 ((uint32_t)0x00000001) /*!< ADC regular conversion rank 1 */
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -57,6 +59,8 @@ DMA_HandleTypeDef hdma_tim1_ch1;
 /* USER CODE BEGIN PV */
 uint8_t flag_adc_dma = 0;
 uint32_t adc = 0;
+
+uint8_t colors[8][3] = {{255, 10, 10}, {255, 10, 65}, {115, 10, 255}, {10, 10, 255}, {10, 225, 255}, {10, 255, 55}, {185, 255, 10}, {255, 155, 10}};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -133,9 +137,12 @@ void WS_Reset(void){
 }
 
 void WS_Set(uint8_t matrix[64]){
+	uint8_t color[3];
     for (int i=0; i < 64; i++){
+        memcpy(color, colors[i / 8], 3);
 		  if (matrix[i] == 1){
-			Set_LED(i, 67, 4, 4);
+//			Set_LED(i, 67, 4, 4);
+			  Set_LED(i, color[0], color[1], color[2]);
 		  }
 		  else {
 			Set_LED(i, 0, 0, 0);
@@ -199,8 +206,12 @@ int main(void)
   uint8_t lst[64] = {};
   WS_Reset();
 
-  WS_Set(lst);
-  HAL_Delay(1000);
+//  lst[0] = 1;
+//  lst[8] = 1;
+
+//  WS_Set(lst);
+//  HAL_Delay(10000);
+
 
   uint16_t buf[1024] = {0};
   float values[1024] = {0};
@@ -215,7 +226,6 @@ int main(void)
   }
 
 
-
   while (1)
   {
     /* USER CODE END WHILE */
@@ -223,7 +233,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-//    HAL_ADC_Start(&hadc1);
 //    HAL_ADC_Start_DMA(&hadc1,(uint32_t *)&ADCBuffer, (1024 * 2));
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &buf, (1024));
 
@@ -232,14 +241,6 @@ int main(void)
 	while(!flag_adc_dma) {};
 	flag_adc_dma = 0;
 
-//    for (uint16_t i = 0; i < 1024; ++i) {
-//
-//        HAL_ADC_PollForConversion(&hadc1, 100);
-//        adc = HAL_ADC_GetValue(&hadc1);
-//        buf[i] = (float) adc;
-//    }
-
-    //    HAL_ADC_Stop(&hadc1);
     HAL_ADC_Stop_DMA(&hadc1);
 
     for (uint16_t i = 0; i < 1024; ++i) {
@@ -254,14 +255,10 @@ int main(void)
     }
 
 
-//    counter = (counter % 8);
-//    m[counter][counter] = !(m[counter][counter]);
-//    ++counter;
-
     int ind = 0;
     for (int row = 0; row < 8; row++) {
     	for (int col = 0; col < 8; col++) {
-    		lst[ind++] = matrix[col][row];
+    		lst[ind++] = matrix[7 - col][row];
     	}
     }
 
