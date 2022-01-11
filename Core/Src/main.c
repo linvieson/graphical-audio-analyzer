@@ -64,7 +64,7 @@ volatile uint8_t flag_adc_dma = 0;
 uint16_t adc_buffer[1024] = {0};
 float adc_float_buffer[1024] = {0};
 
-uint8_t colors[8][3] = {{255, 10, 10}, {255, 10, 65}, {115, 10, 255}, {10, 10, 255}, {10, 225, 255}, {10, 255, 55}, {185, 255, 10}, {255, 155, 10}};
+uint8_t colors[8][3]  = {{255, 10, 10}, {255, 10, 65}, {115, 10, 255}, {10, 10, 255}, {10, 225, 255}, {10, 255, 55}, {185, 255, 10}, {255, 155, 10}};
 uint8_t LED_Data[MAX_LED][4];  // matrix of 4 columns, number of rows = number of LEDs we have
 uint16_t pwmData[24 * MAX_LED + 50]; // store 24 bits for each led + 50 values for reset code
 
@@ -94,7 +94,7 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)  // this callbac
 }
 
 
-void Set_LED (int LEDnum, int Red, int Green, int Blue)
+void Set_LED(int LEDnum, int Red, int Green, int Blue)
 {
 	LED_Data[LEDnum][0] = LEDnum;
 	LED_Data[LEDnum][1] = Green;  // store green first as ws2821b requires this order (g,r,b)
@@ -103,35 +103,35 @@ void Set_LED (int LEDnum, int Red, int Green, int Blue)
 }
 
 
-void WS2812_Send (void)
+void WS2812_Send(void)
 {
-	uint32_t indx = 0;
+	uint32_t index = 0;
 	uint32_t color;  //32 bit variable to store 24 bits of color
 
-	for (uint8_t i = 0; i < MAX_LED; i++)  // iterate through all of the LEDs
+	for (uint8_t led_ind = 0; led_ind < MAX_LED; led_ind++)  // iterate through all of the LEDs
 	{
-		color = ((LED_Data[i][1] << 16) | (LED_Data[i][2] << 8) | (LED_Data[i][3])); // green red blue
+		color = ((LED_Data[led_ind][1] << 16) | (LED_Data[led_ind][2] << 8) | (LED_Data[led_ind][3])); // green red blue
 
-		for (int j = 23; j >= 0; j--) // iterate through the 24 bits which specify the color
+		for (int bit = 23; bit >= 0; bit--) // iterate through the 24 bits which specify the color
 		{
-			if (color & (1 << j))
+			if (color & (1 << bit))
 			{
-				pwmData[indx] = 57; // if the bit is 1, the duty cycle is 64%
+				pwmData[index] = 57; // if the bit is 1, the duty cycle is 64%
 			}
 			else
 			{
-				pwmData[indx] = 28;  // if the bit is 0, the duty cycle is 32%
+				pwmData[index] = 28;  // if the bit is 0, the duty cycle is 32%
 			}
-			indx++;
+			index++;
 		}
 	}
 
 	for (uint8_t i = 0; i < 50; i++)  // store values to keep the pulse low for 50+ us, reset code
 	{
-		pwmData[indx++] = 0;
+		pwmData[index++] = 0;
 	}
 
-	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t*) pwmData, indx);  // send the data to the dma
+	HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t*) pwmData, index);  // send the data to the dma
 
 	while (!datasentflag) {};  // this flag will be set when the data transmission is finished, dma is stopped and now we can send another data
 	datasentflag = 0;
@@ -140,9 +140,9 @@ void WS2812_Send (void)
 
 void WS_Reset(void)
 {
-	for (uint8_t i = 0; i < MAX_LED; i++)
+	for (uint8_t led = 0; led < MAX_LED; led++)
 	{
-    Set_LED(i, 0, 0, 0);
+		Set_LED(led, 0, 0, 0);
     }
 
 	WS2812_Send();
@@ -152,17 +152,16 @@ void WS_Reset(void)
 void WS_Set(uint8_t matrix[MAX_LED])
 {
 	uint8_t color[3];
-
-    for (uint8_t i = 0; i < MAX_LED; i++)
+    for (uint8_t led = 0; led < MAX_LED; led++)
     {
-        memcpy(color, colors[i % 8], 3);
-		if (matrix[i] == 1)
+		if (matrix[led])
 		{
-			Set_LED(i, color[0], color[1], color[2]);
+			memcpy(color, colors[led % 8], 3);
+			Set_LED(led, color[0], color[1], color[2]);
 		}
 		else
 		{
-			Set_LED(i, 0, 0, 0);
+			Set_LED(led, 0, 0, 0);
 		}
     }
 
@@ -206,11 +205,6 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-
   ADC_ChannelConfTypeDef sConfig = {0};
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
@@ -218,8 +212,14 @@ int main(void)
 
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
-  Error_Handler();
+	  Error_Handler();
   }
+
+
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 
   WS_Reset();
 
@@ -227,13 +227,12 @@ int main(void)
   {
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
-
     /* USER CODE BEGIN 3 */
 
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES));
     HAL_Delay(1);
 
-	while(!flag_adc_dma) {};
+	while (!flag_adc_dma) {};
 	flag_adc_dma = 0;
 
     HAL_ADC_Stop_DMA(&hadc1);
