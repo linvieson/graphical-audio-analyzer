@@ -78,37 +78,44 @@ void __compute_fft(float* real_values, float* imag_values)
             u1 = z;
         }
         c2 = - pow((1.0 - c1) / 2.0, 0.5);
-        c1 = pow((1.0 + c1) / 2.0, 0.5);
+        c1 =   pow((1.0 + c1) / 2.0, 0.5);
     }
 }
 
-void __compute_magnitude(float* real_values, float* imag_values)
+void __compute_magnitudes(float* real_values, float* imag_values)
 // Compute in-place the absolute values of the received numbers from the FFT.
 // They are stored in the array real_values.
 {
-    for (uint16_t ind = 0; ind < SAMPLES; ++ind)
+    for (uint16_t ind = 0; ind < SAMPLES >> 1; ++ind)
     {
         // |z| = sqrt(a^2 + b^2)
-        real_values[ind] = pow((pow(real_values[ind], 2) + pow(imag_values[ind], 2)), 0.5);
+        real_values[ind] = sqrt(real_values[ind] * real_values[ind] + imag_values[ind] * imag_values[ind]);
     }
 }
 
 void __interpret_magnitudes(float* magnitudes, float* peaks)
-// STEP = SAMPLING_FREQ / SAMPLES.
+// step = SAMPLING_FREQ / SAMPLES.
 // Divide the fist half of the array of magnitudes on the MATRIX_LENGTH parts,
 // with each next slice being larger than the previous one.
-// For each slice calculate the peak and the average value, and store them into
-// arrays peaks and means respectively.
+// For each slice calculate the peak, and store them in the peaks array.
 
-// The slice boundaries are the number 2 raised to a power, starting from 1 (2 ^ 1 = 2), and ending with
-// MATRIX_LENGTH (2 ^ 8 = 512). Thus, the slices boundaries are: (2, 4); (4, 8); (8, 16); ...; (256, 512).
+// STEP = 41
+// peaks[0] = 123   - 327   Hz
+// peaks[1] = 328   - 614   Hz
+// peaks[2] = 615   - 1024  Hz
+// peaks[3] = 1025  - 3074  Hz
+// peaks[4] = 3075  - 5124  Hz
+// peaks[5] = 5125  - 8199  Hz
+// peaks[6] = 8200  - 12299 Hz
+// peaks[7] = 12300 - 20991 Hz
 {
     uint16_t slices[] = {8, 15, 25, 75, 125, 200, 300, 512};
 
     uint16_t upper_bound;
     uint16_t lower_bound = 3;
 
-    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind) {
+    for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
+    {
         upper_bound = slices[ind];
         peaks[ind] = __calc_slice_peak(magnitudes, lower_bound, upper_bound);
         lower_bound = upper_bound;
@@ -129,17 +136,6 @@ float __calc_slice_peak(float* magnitudes, const uint16_t start, const uint16_t 
     return max_val;
 }
 
-float __calc_slice_mean(float* magnitudes, const uint16_t start, const uint16_t end)
-// Find the average of the array slice with the given indices.
-{
-    float mean = 0;
-    for (uint16_t ind = start; ind < end; ++ind)
-    {
-        mean += magnitudes[ind];
-    }
-    return mean / (end - start);
-}
-
 float __calc_min(float* array)
 // Find the min value of the array.
 {
@@ -154,7 +150,28 @@ float __calc_min(float* array)
     return min_val;
 }
 
-void perform_fft(float* real_values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH])
+void __transform_for_diods(float* values, uint8_t leds[MAX_LED])
+// Fill the array leds consisting of MAX_LEDS elements of 0 or 1, denoting whether to
+// lighten the led or not, by taking the related magnitudes of the frequencies.
+{
+    float max = __calc_slice_peak(values, 0, MATRIX_LENGTH);
+    float min = __calc_min(values);
+    float step = (max - min) / (MATRIX_LENGTH - 1);
+
+    for (uint8_t col = 0; col < MATRIX_LENGTH; ++col)
+    {
+        uint8_t scaled_peak = floor(values[col] / step);
+
+        uint8_t led_ind = (MATRIX_LENGTH - 1) * MATRIX_LENGTH + col;    // take the last row + current column
+        for (uint8_t row = 0; row <= scaled_peak; ++row)
+        {
+            leds[led_ind] = 1;
+            led_ind -= MATRIX_LENGTH;
+        }
+    }
+}
+
+void perform_fft(float* real_values, uint8_t leds[MAX_LED])
 // Driver function to compute the peaks and the average values, which will be stored in the arrays peaks and means respectively.
 {
     __pre_fft(real_values);
@@ -163,31 +180,8 @@ void perform_fft(float* real_values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH
     float peaks[MATRIX_LENGTH] = {};
 
     __compute_fft(real_values, imag_values);
-    __compute_magnitude(real_values, imag_values);
+    __compute_magnitudes(real_values, imag_values);
 
     __interpret_magnitudes(real_values, peaks);
-
-    transform_for_diods(peaks, matrix);
-
-}
-
-void transform_for_diods(float* values, uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH])
-{
-    float max = __calc_slice_peak(values, 0, MATRIX_LENGTH);
-    float min = __calc_min(values);
-    float step = (max - min) / (MATRIX_LENGTH - 1);
-
-    for (uint8_t col = 0; col < MATRIX_LENGTH; ++col)
-    {
-        uint8_t scaled = floor(values[col] / step);
-//        if (scaled == 0)
-//        {
-//            continue;
-//        }
-
-        for (uint8_t row = 0; row <= scaled; ++row)
-        {
-            matrix[MATRIX_LENGTH - row - 1][col] = 1;
-        }
-    }
+    __transform_for_diods(peaks, leds);
 }

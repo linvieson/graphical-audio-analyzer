@@ -35,7 +35,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define MAX_LED 			64 						// max LEDs that we have in a cascade
-#define SAMPLES_NUM         1024					// number of samples for adc
+#define SAMPLES		        1024					// number of samples for adc
 #define ADC_REGULAR_RANK_1	((uint32_t)0x00000001)	// ADC regular conversion rank 1
 
 /* USER CODE END PD */
@@ -67,8 +67,6 @@ float adc_float_buffer[1024] = {0};
 uint8_t colors[8][3] = {{255, 10, 10}, {255, 10, 65}, {115, 10, 255}, {10, 10, 255}, {10, 225, 255}, {10, 255, 55}, {185, 255, 10}, {255, 155, 10}};
 uint8_t LED_Data[MAX_LED][4];  // matrix of 4 columns, number of rows = number of LEDs we have
 uint16_t pwmData[24 * MAX_LED + 50]; // store 24 bits for each led + 50 values for reset code
-
-uint8_t leds[64] = {}; // to store which leds to lighten after performing fft
 
 /* USER CODE END PV */
 
@@ -157,7 +155,7 @@ void WS_Set(uint8_t matrix[MAX_LED])
 
     for (uint8_t i = 0; i < MAX_LED; i++)
     {
-        memcpy(color, colors[i / 8], 3);
+        memcpy(color, colors[i % 8], 3);
 		if (matrix[i] == 1)
 		{
 			Set_LED(i, color[0], color[1], color[2]);
@@ -232,7 +230,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES_NUM));
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES));
     HAL_Delay(1);
 
 	while(!flag_adc_dma) {};
@@ -241,25 +239,16 @@ int main(void)
     HAL_ADC_Stop_DMA(&hadc1);
 
 
-    for (uint16_t i = 0; i < SAMPLES_NUM; i++)
+    for (uint16_t i = 0; i < SAMPLES; i++)
     {
     	adc_float_buffer[i] = (float) adc_buffer[i];
     }
 
-    uint8_t matrix[MATRIX_LENGTH][MATRIX_LENGTH] = {};
-    perform_fft(adc_float_buffer, matrix);
+    uint8_t leds[64] = {};
+    perform_fft(adc_float_buffer, leds);
 
-    uint8_t ind = 0;
-    for (uint8_t row = 0; row < 8; row++)
-    {
-    	for (uint8_t col = 0; col < 8; col++)
-    	{
-    		leds[ind++] = matrix[7 - col][row];
-    	}
-    }
-
-	  WS_Set(leds);
-	  HAL_Delay(200);
+    WS_Set(leds);
+	HAL_Delay(200);
   }
   /* USER CODE END 3 */
 }
