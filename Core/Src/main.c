@@ -36,7 +36,7 @@
 /* USER CODE BEGIN PD */
 #define MATRIX_ROW			8
 #define MAX_LED 			64 						// max LEDs that we have in a cascade
-#define SAMPLES		        1024					// number of samples for adc
+#define SAMPLES		        2048					// number of samples for adc
 #define ADC_REGULAR_RANK_1	((uint32_t)0x00000001)	// ADC regular conversion rank 1
 
 /* USER CODE END PD */
@@ -232,12 +232,15 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES));
-    HAL_Delay(1);
+
+    HAL_Delay(10);
 
 	while (!flag_adc_dma) {};
 	flag_adc_dma = 0;
 
     HAL_ADC_Stop_DMA(&hadc1);
+
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
 
     // fft requires float values from adc
     for (uint16_t i = 0; i < SAMPLES; i++)
@@ -248,8 +251,10 @@ int main(void)
     uint8_t leds[MAX_LED] = {};
     perform_fft(adc_float_buffer, leds);
 
+//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
+
     WS_Set(leds);
-	HAL_Delay(50);
+	HAL_Delay(25);
   }
   /* USER CODE END 3 */
 }

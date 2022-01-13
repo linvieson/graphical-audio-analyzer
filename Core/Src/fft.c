@@ -1,7 +1,6 @@
 #include "fft.h"
 
-
-void __pre_fft(float* real_values)
+void __pre_fft(float real_values[SAMPLES])
 // Scale (window) the initial values of the points to reduce the spectral leakage.
 // Use Hamming Window with scaling factor (coherent gain) = 0.54
 {
@@ -29,7 +28,7 @@ void __swap(float* val_1, float* val_2)
     *val_2 = temp;
 }
 
-void __compute_fft(float* real_values, float* imag_values)
+void __compute_fft(float real_values[SAMPLES], float imag_values[SAMPLES])
 // Compute the in-place Fast Furrier transform.
 {
     uint16_t j = 0;
@@ -82,7 +81,7 @@ void __compute_fft(float* real_values, float* imag_values)
     }
 }
 
-void __compute_magnitudes(float* real_values, float* imag_values)
+void __compute_magnitudes(float real_values[SAMPLES], float imag_values[SAMPLES])
 // Compute in-place the absolute values of the received numbers from the FFT.
 // They are stored in the array real_values.
 {
@@ -93,26 +92,26 @@ void __compute_magnitudes(float* real_values, float* imag_values)
     }
 }
 
-void __interpret_magnitudes(float* magnitudes, float* peaks)
+void __interpret_magnitudes(float magnitudes[SAMPLES], float peaks[MATRIX_LENGTH])
 // step = SAMPLING_FREQ / SAMPLES.
 // Divide the fist half of the array of magnitudes on the MATRIX_LENGTH parts,
 // with each next slice being larger than the previous one.
 // For each slice calculate the peak, and store them in the peaks array.
 
-// STEP = 41
-// peaks[0] = 123   - 327   Hz
-// peaks[1] = 328   - 614   Hz
-// peaks[2] = 615   - 1024  Hz
-// peaks[3] = 1025  - 3074  Hz
-// peaks[4] = 3075  - 5124  Hz
-// peaks[5] = 5125  - 8199  Hz
-// peaks[6] = 8200  - 12299 Hz
-// peaks[7] = 12300 - 20991 Hz
+// STEP = 36
+// peaks[0] = 108   - 287   Hz
+// peaks[1] = 288   - 539   Hz
+// peaks[2] = 540   - 899   Hz
+// peaks[3] = 900   - 2699  Hz
+// peaks[4] = 2700  - 4499  Hz
+// peaks[5] = 4500  - 7199  Hz
+// peaks[6] = 7200  - 10799 Hz
+// peaks[7] = 10800 - 18432 Hz
 {
-    uint16_t slices[] = {8, 15, 25, 75, 125, 200, 300, 512};
+    uint16_t slices[] = {20, 50, 100, 150, 250, 350, 670, 1024};
 
     uint16_t upper_bound;
-    uint16_t lower_bound = 3;
+    uint16_t lower_bound = 10;
 
     for (uint8_t ind = 0; ind < MATRIX_LENGTH; ++ind)
     {
@@ -150,19 +149,30 @@ float __calc_min(float* array)
     return min_val;
 }
 
-void __transform_for_diods(float* values, uint8_t leds[MAX_LED])
+void __transform_for_diods(float values[MATRIX_LENGTH], uint8_t leds[MAX_LED])
 // Fill the array leds consisting of MAX_LEDS elements of 0 or 1, denoting whether to
 // lighten the led or not, by taking the related magnitudes of the frequencies.
 {
-    float max = __calc_slice_peak(values, 0, MATRIX_LENGTH);
-    float min = __calc_min(values);
+//	values[0] /= 1.25;
+    float max_peak = __calc_slice_peak(values, 0, MATRIX_LENGTH);
+    float max_emp  = 250000.0;
+
+    float max = (max_peak > max_emp) ? max_peak : max_emp;
+
+//    float min = __calc_min(values);
+    float min = 10000.0;
     float step = (max - min) / (MATRIX_LENGTH - 1);
 
     for (uint8_t col = 0; col < MATRIX_LENGTH; ++col)
     {
         uint8_t scaled_peak = floor(values[col] / step);
 
-        uint8_t led_ind = (MATRIX_LENGTH - 1) * MATRIX_LENGTH + col;    // take the last row + current column
+        uint8_t led_ind = (MATRIX_LENGTH - 1) * MATRIX_LENGTH + col;
+
+        if (scaled_peak >= 8) {
+        	scaled_peak = 7;
+        }
+
         for (uint8_t row = 0; row <= scaled_peak; ++row)
         {
             leds[led_ind] = 1;
@@ -171,7 +181,7 @@ void __transform_for_diods(float* values, uint8_t leds[MAX_LED])
     }
 }
 
-void perform_fft(float* real_values, uint8_t leds[MAX_LED])
+void perform_fft(float real_values[SAMPLES], uint8_t leds[MAX_LED])
 // Driver function to compute the peaks and the average values, which will be stored in the arrays peaks and means respectively.
 {
     __pre_fft(real_values);
@@ -182,6 +192,12 @@ void perform_fft(float* real_values, uint8_t leds[MAX_LED])
     __compute_fft(real_values, imag_values);
     __compute_magnitudes(real_values, imag_values);
 
+    for (uint8_t i = 0; i < 50; ++i)
+    {
+    	real_values[i] /= 80.0 / (30.0 + i);
+    }
+
     __interpret_magnitudes(real_values, peaks);
+
     __transform_for_diods(peaks, leds);
 }
