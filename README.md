@@ -46,4 +46,11 @@ The result of the project is a graphical audio spectrum analyzer. The input soun
 - [Anna-Alina Bondarets](https://github.com/alorthius)
 - [Anastasiia Tkachyshyn](https://github.com/tkachyshyn)
 
+Menthors:
+
+- Andrii Oksenchuk (Graduate Characterization Engineer, Renesas)
+- Dmytro Ryzhenkov (Characterization Team Lead, Renesas)
+
+
+
 
