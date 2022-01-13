@@ -34,6 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MATRIX_ROW			8
 #define MAX_LED 			64 						// max LEDs that we have in a cascade
 #define SAMPLES		        1024					// number of samples for adc
 #define ADC_REGULAR_RANK_1	((uint32_t)0x00000001)	// ADC regular conversion rank 1
@@ -61,10 +62,10 @@ DMA_HandleTypeDef hdma_tim1_ch1;
 uint8_t datasentflag = 0;  // to make sure that the dma does not send another data while the first data is still transmitted
 
 volatile uint8_t flag_adc_dma = 0;
-uint16_t adc_buffer[1024] = {0};
-float adc_float_buffer[1024] = {0};
+uint16_t adc_buffer[SAMPLES] = {0};
+float adc_float_buffer[SAMPLES] = {0};
 
-uint8_t colors[8][3]  = {{255, 10, 10}, {255, 10, 65}, {115, 10, 255}, {10, 10, 255}, {10, 225, 255}, {10, 255, 55}, {185, 255, 10}, {255, 155, 10}};
+uint8_t colors[MATRIX_ROW][3]  = {{255, 16, 16}, {255, 16, 64}, {240, 32, 255}, {48, 48, 255}, {16, 225, 255}, {16, 255, 64}, {184, 255, 16}, {255, 155, 16}};
 uint8_t LED_Data[MAX_LED][4];  // matrix of 4 columns, number of rows = number of LEDs we have
 uint16_t pwmData[24 * MAX_LED + 50]; // store 24 bits for each led + 50 values for reset code
 
@@ -156,8 +157,9 @@ void WS_Set(uint8_t matrix[MAX_LED])
     {
 		if (matrix[led])
 		{
-			memcpy(color, colors[led % 8], 3);
-			Set_LED(led, color[0], color[1], color[2]);
+			memcpy(color, colors[led % MATRIX_ROW], 3);
+			int scaler = 2 * led / MATRIX_ROW + 1;
+			Set_LED(led, ceil(color[0] / scaler), ceil(color[1] / scaler), ceil(color[2] / scaler));
 		}
 		else
 		{
@@ -237,17 +239,17 @@ int main(void)
 
     HAL_ADC_Stop_DMA(&hadc1);
 
-
+    // fft requires float values from adc
     for (uint16_t i = 0; i < SAMPLES; i++)
     {
     	adc_float_buffer[i] = (float) adc_buffer[i];
     }
 
-    uint8_t leds[64] = {};
+    uint8_t leds[MAX_LED] = {};
     perform_fft(adc_float_buffer, leds);
 
     WS_Set(leds);
-	HAL_Delay(200);
+	HAL_Delay(50);
   }
   /* USER CODE END 3 */
 }
