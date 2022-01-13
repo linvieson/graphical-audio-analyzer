@@ -16,16 +16,29 @@ The aim of the project was to solve the above issues, by depicting the sound on 
 - Electret Microphone Amplifier MAX9814
 - 8x8 Matrix of Address LEDs
 
+## Download and start
+
+```
+git clone https://github.com/linvieson/graphical-audio-analyzer.git
+```
+
+Open the CubeIDE, compile and run the program.
+
 ## Usage
 
+As all computations are done in real time, the user will instantly view the output on the matrix. The user can speak, play music or just turn on some frequency on a frequency generator to observe the leds on the matrix changing. Each column represents one frequency (more precisely, one group of similar frequencies, because there are only 8 columns on the matrix to be used). The more leds are lighted in the column - the louder is the frequency represented by that column.
 
+## How does it work?
 
+There are mainly 3 steps of how the program exactly works:
 
+- Read the input via the microphone
+- Process the data, use the Fast Fourier Transform function
+- Display the result on the led matrix
 
 ## Results
 
-
-
+The result of the project is a graphical audio spectrum analyzer. The input sound is processed with the help of Fast Fourier Transform and the frequencies are displayed on the led matrix.
 
 ## Contributors
 
