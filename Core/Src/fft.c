@@ -159,7 +159,6 @@ void __transform_for_diods(float values[MATRIX_LENGTH], uint8_t leds[MAX_LED])
 
     float max = (max_peak > max_emp) ? max_peak : max_emp;
 
-//    float min = __calc_min(values);
     float min = 10000.0;
     float step = (max - min) / (MATRIX_LENGTH - 1);
 
@@ -194,7 +193,9 @@ void perform_fft(float real_values[SAMPLES], uint8_t leds[MAX_LED])
 
     for (uint8_t i = 0; i < 50; ++i)
     {
-    	real_values[i] /= 80.0 / (30.0 + i);
+//    	real_values[i] /= 80.0 / (30.0 + i);
+    	real_values[i] /= -(0.4068 * log(0.00130072 * (i+0.1))); //values for best log fit to the data
+
     }
 
     __interpret_magnitudes(real_values, peaks);
