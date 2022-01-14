@@ -6,6 +6,9 @@
 
 #define TWO_PI          6.28318531
 
+#define MAX_AMP 		250000.0
+#define MIN_AMP			10000.0
+
 #define SAMPLES         2048
 #define SAMPLING_FREQ   36290
 #define MATRIX_LENGTH   8
