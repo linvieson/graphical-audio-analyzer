@@ -12,7 +12,7 @@ The aim of the project was to solve the above issues, by depicting the sound on 
 
 ## Conponents
 
-- STM32 Discovery
+- STM32F407 Discovery
 - Electret Microphone Amplifier MAX9814
 - 8x8 Matrix of Address LEDs
 
