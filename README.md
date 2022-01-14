@@ -36,7 +36,7 @@ There are mainly 3 steps of how the program exactly works:
 - Process the data, using the Fast Fourier Transform function to compute the amplitudes. Scale them so that receive the natural representation of the frequencies
 - Display the result on the led matrix
 
-![pics/circuit.png]
+![](pics/circuit.png)
 
 ## Results
 
