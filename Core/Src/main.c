@@ -248,7 +248,7 @@ int main(void)
 
     // Fill the array by values from adc
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES));
-    HAL_Delay(10);
+    HAL_Delay(1);
 
 	while (!flag_adc_dma) {};
 	flag_adc_dma = 0;
