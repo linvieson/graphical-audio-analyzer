@@ -18,11 +18,11 @@ The aim of the project was to solve the above issues, by depicting the sound on 
 
 ## Download and start
 
-```
-git clone https://github.com/linvieson/graphical-audio-analyzer.git
-```
+Ensure to have all the required components connected according to the scheme.
 
-Open the CubeIDE, compile and run the program.
+In the STM32CubeIDE environment, choose the option to create a new STM32 Project from an Existing STM32CubeMX Configuration File (.ioc) and choose the given ![project.ioc](https://github.com/linvieson/graphical-audio-analyzer/blob/main/project.ioc) file. Then, in your project, **replace** the content of the files in **Core/** folder with ![the given ones](https://github.com/linvieson/graphical-audio-analyzer/tree/main/Core): ![main.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/main.c) and the ![stm32f4xx_it.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/stm32f4xx_it.c) files in the **Core/Src/** folder.
+
+**Create** a new files for fft permormance: ![fft.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/fft.c) in the folder **Core/Src/**, and its header file ![fft.h](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Inc/fft.h) in the **Core/Inc/** folder.
 
 ## Usage
 
