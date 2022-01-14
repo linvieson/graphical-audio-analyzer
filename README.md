@@ -36,6 +36,8 @@ There are mainly 3 steps of how the program exactly works:
 - Process the data, using the Fast Fourier Transform function to compute the amplitudes. Scale them so that receive the natural representation of the frequencies
 - Display the result on the led matrix
 
+![pics/circuit.png]
+
 ## Results
 
 The result of the project is a graphical audio spectrum analyzer. The input sound is processed with the help of Fast Fourier Transform and the frequencies are displayed on the led matrix.
