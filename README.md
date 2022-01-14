@@ -20,9 +20,9 @@ The aim of the project was to solve the above issues, by depicting the sound on 
 
 Ensure to have all the required components connected according to the scheme.
 
-In the STM32CubeIDE environment, choose the option to create a new STM32 Project from an Existing STM32CubeMX Configuration File (.ioc) and choose the given ![project.ioc](https://github.com/linvieson/graphical-audio-analyzer/blob/main/project.ioc) file. Then, in your project, **replace** the content of the files in **Core/** folder with ![the given ones](https://github.com/linvieson/graphical-audio-analyzer/tree/main/Core): ![main.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/main.c) and the ![stm32f4xx_it.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/stm32f4xx_it.c) files in the **Core/Src/** folder.
+In the STM32CubeIDE environment, choose the option to create a new STM32 Project from an Existing STM32CubeMX Configuration File (.ioc) and choose the given [project.ioc](https://github.com/linvieson/graphical-audio-analyzer/blob/main/project.ioc) file. Then, in your project, **replace** the content of the files in **Core/** folder with [the given ones](https://github.com/linvieson/graphical-audio-analyzer/tree/main/Core): [main.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/main.c) and the [stm32f4xx_it.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/stm32f4xx_it.c) files in the **Core/Src/** folder.
 
-**Create** a new files for fft permormance: ![fft.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/fft.c) in the folder **Core/Src/**, and its header file ![fft.h](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Inc/fft.h) in the **Core/Inc/** folder.
+**Create** a new files for fft permormance: [fft.c](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Src/fft.c) in the folder **Core/Src/**, and its header file [fft.h](https://github.com/linvieson/graphical-audio-analyzer/blob/main/Core/Inc/fft.h) in the **Core/Inc/** folder.
 
 ## Usage
 
@@ -32,8 +32,8 @@ As all computations are done in real time, the user will instantly view the outp
 
 There are mainly 3 steps of how the program exactly works:
 
-- Read the input via the microphone
-- Process the data, use the Fast Fourier Transform function
+- Read the input via the microphone and transform the given analogue signal to the discrete one, using the adc on the stm32 board
+- Process the data, using the Fast Fourier Transform function to compute the amplitudes. Scale them so that receive the natural representation of the frequencies
 - Display the result on the led matrix
 
 ## Results
@@ -50,7 +50,3 @@ Menthors:
 
 - Andrii Oksenchuk (Graduate Characterization Engineer, Renesas)
 - Dmytro Ryzhenkov (Characterization Team Lead, Renesas)
-
-
-
-
