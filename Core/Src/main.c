@@ -155,20 +155,18 @@ void WS_Set(uint8_t matrix[MAX_LED])
 	uint8_t color[3];
     for (uint8_t led = 0; led < MAX_LED; led++)
     {
-		if (matrix[led])
-		{
+		if (matrix[led]) {
 			memcpy(color, colors[led % MATRIX_ROW], 3);
 			int scaler = 2 * led / MATRIX_ROW + 1;
 			Set_LED(led, ceil(color[0] / scaler), ceil(color[1] / scaler), ceil(color[2] / scaler));
-		}
-		else
-		{
+		} else {
 			Set_LED(led, 0, 0, 0);
 		}
     }
 
     WS2812_Send();
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -212,8 +210,7 @@ int main(void)
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
 
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK) {
 	  Error_Handler();
   }
 
@@ -232,7 +229,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES));
-
     HAL_Delay(10);
 
 	while (!flag_adc_dma) {};
@@ -240,18 +236,13 @@ int main(void)
 
     HAL_ADC_Stop_DMA(&hadc1);
 
-//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
-
     // fft requires float values from adc
-    for (uint16_t i = 0; i < SAMPLES; i++)
-    {
+    for (uint16_t i = 0; i < SAMPLES; i++) {
     	adc_float_buffer[i] = (float) adc_buffer[i];
     }
 
     uint8_t leds[MAX_LED] = {};
     perform_fft(adc_float_buffer, leds);
-
-//    HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
 
     WS_Set(leds);
 	HAL_Delay(25);
