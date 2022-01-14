@@ -50,3 +50,9 @@ Menthors:
 
 - Andrii Oksenchuk (Graduate Characterization Engineer, Renesas)
 - Dmytro Ryzhenkov (Characterization Team Lead, Renesas)
+
+## Sources used
+
+- for ADC:    https://istarik.ru/blog/stm32/113.html
+- for matrix: https://controllerstech.com/interface-ws2812-with-stm32/
+- for fft:    https://github.com/kosme/arduinoFFT
