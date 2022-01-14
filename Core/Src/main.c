@@ -15,7 +15,13 @@
   *                             www.st.com/SLA0044
   *
   ******************************************************************************
+
+  * Souces used:
+  * for ADC:    https://istarik.ru/blog/stm32/113.html
+  * for matrix: https://controllerstech.com/interface-ws2812-with-stm32/
+  * for fft:    https://github.com/kosme/arduinoFFT
   */
+
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -88,7 +94,8 @@ void MX_USB_HOST_Process(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)  // this callback is called when data transmission is finished
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+// this callback is called when data transmission is finished
 {
 	HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);  // stop dma, when the transmission is finished
 	datasentflag = 1;
@@ -96,6 +103,8 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)  // this callbac
 
 
 void Set_LED(int LEDnum, int Red, int Green, int Blue)
+// Change the colors from RGB format to the GRB for matrix.
+// Set a given led index the GRB colors parameters.
 {
 	LED_Data[LEDnum][0] = LEDnum;
 	LED_Data[LEDnum][1] = Green;  // store green first as ws2821b requires this order (g,r,b)
@@ -105,6 +114,7 @@ void Set_LED(int LEDnum, int Red, int Green, int Blue)
 
 
 void WS2812_Send(void)
+// Convert and send the data to the DMA
 {
 	uint32_t index = 0;
 	uint32_t color;  //32 bit variable to store 24 bits of color
@@ -140,6 +150,7 @@ void WS2812_Send(void)
 
 
 void WS_Reset(void)
+// Turn off all the leds in the matrix
 {
 	for (uint8_t led = 0; led < MAX_LED; led++)
 	{
@@ -151,14 +162,16 @@ void WS_Reset(void)
 
 
 void WS_Set(uint8_t matrix[MAX_LED])
+// Turn on with a certain color the led from the list, where each element indicates whether a led
+// by the given index should be on (1), or off (0).
 {
 	uint8_t color[3];
     for (uint8_t led = 0; led < MAX_LED; led++)
     {
 		if (matrix[led])
 		{
-			memcpy(color, colors[led % MATRIX_ROW], 3);
-			int scaler = 2 * led / MATRIX_ROW + 1;
+			memcpy(color, colors[led % MATRIX_ROW], 3); // take a specific color for different columns
+			int scaler = 2 * led / MATRIX_ROW + 1;	// scale brightness by rows (the higher led, the brighter)
 			Set_LED(led, ceil(color[0] / scaler), ceil(color[1] / scaler), ceil(color[2] / scaler));
 		}
 		else
@@ -208,10 +221,11 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
+  // Set the adc rank to 1 (the first order of the adc conversion)
   ADC_ChannelConfTypeDef sConfig = {0};
   sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES;
+  sConfig.Rank = ADC_REGULAR_RANK_1; // the first adc channel will be converted
+  sConfig.SamplingTime = ADC_SAMPLETIME_112CYCLES; // time to sample for a channel
 
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -232,6 +246,7 @@ int main(void)
     MX_USB_HOST_Process();
     /* USER CODE BEGIN 3 */
 
+    // Fill the array by values from adc
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*) &adc_buffer, (SAMPLES));
     HAL_Delay(10);
 
@@ -249,6 +264,7 @@ int main(void)
     uint8_t leds[MAX_LED] = {};
     perform_fft(adc_float_buffer, leds);
 
+    // Lighten the leds
     WS_Set(leds);
 	HAL_Delay(25);
   }

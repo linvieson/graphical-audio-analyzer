@@ -1,3 +1,9 @@
+/*
+ * The fft reference is from https://github.com/kosme/arduinoFFT
+ * https://github.com/kosme/arduinoFFT/blob/master/src/arduinoFFT.cpp
+ * It was the base of the implementation (function __compute_fft).
+ */
+
 #include "fft.h"
 
 void __pre_fft(float real_values[SAMPLES])
